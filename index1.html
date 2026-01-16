@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zitat Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Lobster&family=Oswald&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { margin-bottom: 20px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 1600px;
+            width: 100%;
+        }
+
+        /* --- STEUERUNG --- */
+        .controls {
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 12px;
+            flex: 1;
+            min-width: 340px;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            height: fit-content;
+            border: 1px solid #333;
+        }
+
+        .row { display: flex; gap: 10px; align-items: flex-end; }
+        .row > div { flex: 1; }
+
+        label { font-size: 0.75rem; color: #888; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; margin-bottom: 4px; display: block; }
+        
+        textarea, input[type="text"], select {
+            width: 100%; padding: 10px; box-sizing: border-box;
+            border-radius: 5px; border: 1px solid #444; background: #2c2c2c;
+            color: white; font-size: 14px; outline: none; font-family: inherit;
+        }
+
+        textarea:focus, input:focus, select:focus { border-color: #007bff; background: #333; }
+        textarea { resize: vertical; min-height: 70px; }
+
+        /* Style Buttons */
+        .style-buttons { display: flex; gap: 5px; }
+        .toggle-btn {
+            flex: 1; padding: 10px; background: #2c2c2c; border: 1px solid #444;
+            color: white; cursor: pointer; border-radius: 5px; transition: all 0.2s;
+        }
+        .toggle-btn.active { background: #007bff; border-color: #007bff; }
+        
+        input[type="range"] { width: 100%; accent-color: #007bff; cursor: pointer; margin: 5px 0; }
+        
+        .reset-btn {
+            background: #444; color: #fff; border: none; padding: 4px 8px;
+            border-radius: 4px; font-size: 0.7rem; cursor: pointer;
+        }
+        .reset-btn:hover { background: #666; }
+
+        .buttons { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .action-btn {
+            padding: 12px; cursor: pointer; border: none; border-radius: 5px;
+            font-weight: bold; font-size: 0.9rem; color: white; transition: opacity 0.2s;
+        }
+        .action-btn:hover { opacity: 0.85; }
+        .btn-jpg { background-color: #e67e22; }
+        .btn-png { background-color: #27ae60; }
+        .btn-pdf { background-color: #c0392b; }
+
+        /* --- VORSCHAU --- */
+        .preview-area {
+            flex: 2; display: flex; justify-content: center; align-items: flex-start;
+            background: #0a0a0a; padding: 40px; border-radius: 12px;
+            overflow: auto; min-height: 600px; border: 1px solid #333;
+            position: relative;
+        }
+        
+        #loadingOverlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8); display: none;
+            justify-content: center; align-items: center; z-index: 10;
+            color: white; font-size: 1.5rem; border-radius: 12px;
+        }
+
+        canvas {
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            max-width: 100%; height: auto; border: 1px solid #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Zitat Generator</h1>
+
+    <div class="container">
+        <div class="controls">
+            
+            <div class="row">
+                <div class="control-group">
+                    <label>Format</label>
+                    <select id="paperFormat">
+                        <option value="a4">A4</option>
+                        <option value="a3">A3</option>
+                        <option value="a2">A2</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Ausrichtung</label>
+                    <select id="orientation">
+                        <option value="landscape" selected>Querformat (Standard)</option>
+                        <option value="portrait">Hochformat</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr style="width:100%; border:0; border-top:1px solid #444;">
+
+            <div class="control-group">
+                <label>Zitat Text (ohne Klammern)</label>
+                <textarea id="quoteText">Design is intelligence made visible.</textarea>
+            </div>
+
+            <div class="control-group">
+                <label style="color:#007bff;">Automatische Klammerung</label>
+                <select id="quoteMarks" style="border-color:#007bff;">
+                    <option value="none">Keine</option>
+                    <option value="german" selected>„ Deutsch “ (Unten - Oben)</option>
+                    <option value="english">" Englisch " (Oben - Oben)</option>
+                    <option value="special">` Spezial ´ (Akzente)</option>
+                    <option value="french">» Französisch « (Pfeile)</option>
+                    <option value="single">‚ Einfach ‘</option>
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="control-group" style="flex: 2;">
+                    <label>Schriftart</label>
+                    <select id="fontFamily">
+                        <option value="Helvetica, Arial, sans-serif">Helvetica / Arial</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="'Courier New', monospace">Courier New</option>
+                        <option value="'Georgia', serif">Georgia</option>
+                        <option value="'Playfair Display', serif">Playfair Display</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Lato', sans-serif">Lato</option>
+                        <option value="'Lobster', cursive">Lobster</option>
+                        <option value="'Oswald', sans-serif">Oswald</option>
+                    </select>
+                </div>
+                <div class="control-group" style="flex: 1;">
+                    <label>Stil</label>
+                    <div class="style-buttons">
+                        <button id="btnBold" class="toggle-btn" style="font-weight:bold">B</button>
+                        <button id="btnItalic" class="toggle-btn" style="font-style:italic">I</button>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="width:100%; border:0; border-top:1px solid #444;">
+
+            <div class="row" style="justify-content: space-between; align-items: center;">
+                <label>Positionierung</label>
+                <button class="reset-btn" onclick="resetPosition()">Mitte Reset</button>
+            </div>
+
+            <div class="control-group">
+                <label>Größe: <span id="quoteSizeDisplay">60</span></label>
+                <input type="range" id="quoteSize" min="20" max="300" value="60">
+            </div>
+
+            <div class="row">
+                <div class="control-group">
+                    <label>Verschieben X</label>
+                    <input type="range" id="offsetX" min="-500" max="500" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Verschieben Y</label>
+                    <input type="range" id="offsetY" min="-1000" max="1000" value="0">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Text-Ausrichtung</label>
+                <select id="textAlign">
+                    <option value="center" selected>Zentriert</option>
+                    <option value="left">Links</option>
+                    <option value="right">Rechts</option>
+                </select>
+            </div>
+
+            <hr style="width:100%; border:0; border-top:1px solid #444;">
+
+            <div class="control-group">
+                <label>Autor Name</label>
+                <input type="text" id="authorText" value="Alina Wheeler">
+            </div>
+            
+            <div class="control-group">
+                <label>Autor Größe: <span id="authorSizeDisplay">25</span></label>
+                <input type="range" id="authorSize" min="10" max="150" value="25">
+            </div>
+
+            <div class="buttons">
+                <button class="action-btn btn-jpg" onclick="exportFile('jpg')">JPG</button>
+                <button class="action-btn btn-png" onclick="exportFile('png')">PNG</button>
+                <button class="action-btn btn-pdf" onclick="exportFile('pdf')">PDF</button>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <div id="loadingOverlay">Generiere High-Res...</div>
+            <canvas id="posterCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('posterCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        
+        let isBold = false;
+        let isItalic = false;
+
+        const inputs = {
+            format: document.getElementById('paperFormat'),
+            orientation: document.getElementById('orientation'),
+            quote: document.getElementById('quoteText'),
+            quoteMarks: document.getElementById('quoteMarks'),
+            fontFamily: document.getElementById('fontFamily'),
+            quoteSize: document.getElementById('quoteSize'),
+            offsetX: document.getElementById('offsetX'),
+            offsetY: document.getElementById('offsetY'),
+            align: document.getElementById('textAlign'),
+            author: document.getElementById('authorText'),
+            authorSize: document.getElementById('authorSize')
+        };
+        
+        const displays = {
+            quote: document.getElementById('quoteSizeDisplay'),
+            author: document.getElementById('authorSizeDisplay')
+        };
+
+        const toggles = {
+            bold: document.getElementById('btnBold'),
+            italic: document.getElementById('btnItalic')
+        };
+
+        // Abmessungen 300 DPI
+        const paperSizes = {
+            'a4': { w: 2480, h: 3508 },
+            'a3': { w: 3508, h: 4960 },
+            'a2': { w: 4960, h: 7016 }
+        };
+
+        // Performance: Vorschau-Breite
+        const PREVIEW_WIDTH = 1000; 
+
+        // --- Toggle Logic ---
+        toggles.bold.addEventListener('click', () => { isBold = !isBold; toggles.bold.classList.toggle('active'); requestDraw(); });
+        toggles.italic.addEventListener('click', () => { isItalic = !isItalic; toggles.italic.classList.toggle('active'); requestDraw(); });
+
+        function resetPosition() {
+            inputs.offsetX.value = 0;
+            inputs.offsetY.value = 0;
+            requestDraw();
+        }
+
+        // --- AUTOMATISCHE KLAMMERN LOGIK ---
+        function wrapQuote(text, style) {
+            text = text.trim();
+            if(!text) return "";
+            switch(style) {
+                case 'german': return `„${text}“`;   // Deutsch
+                case 'english': return `"${text}"`;  // Englisch
+                case 'french': return `»${text}«`;   // Französisch
+                case 'special': return `\`${text}´`; // Backtick & Akzent
+                case 'single': return `‚${text}‘`;   // Einfach
+                default: return text;                // Keine
+            }
+        }
+
+        function getSafeFilename() {
+            let name = inputs.quote.value.trim();
+            name = name.replace(/[^a-zA-Z0-9äöüÄÖÜß ]/g, "").replace(/\s+/g, "_");
+            if(name.length > 25) name = name.substring(0, 25);
+            if(!name) name = "zitat";
+            return name;
+        }
+
+        // --- Haupt-Zeichenfunktion ---
+        function draw(isExport = false) {
+            const format = inputs.format.value;
+            const orient = inputs.orientation.value;
+            
+            // 1. Basis-Größe
+            let fullW = paperSizes[format].w;
+            let fullH = paperSizes[format].h;
+            if (orient === 'landscape') [fullW, fullH] = [fullH, fullW];
+
+            // 2. Skalierung für Vorschau vs Export
+            let scaleFactor = isExport ? 1.0 : (PREVIEW_WIDTH / fullW);
+            
+            canvas.width = fullW * scaleFactor;
+            canvas.height = fullH * scaleFactor;
+
+            // Hintergrund Schwarz
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // UI Update
+            if(!isExport) {
+                displays.quote.textContent = inputs.quoteSize.value;
+                displays.author.textContent = inputs.authorSize.value;
+            }
+
+            // --- ZITAT RENDERN ---
+            const rawQuoteSize = parseInt(inputs.quoteSize.value) * 4;
+            const scaledQuoteSize = rawQuoteSize * scaleFactor;
+            
+            const fontName = inputs.fontFamily.value;
+            let fontStyle = "";
+            if (isItalic) fontStyle += "italic ";
+            if (isBold) fontStyle += "bold ";
+            
+            ctx.fillStyle = "white";
+            ctx.font = `${fontStyle} ${scaledQuoteSize}px ${fontName}`;
+            ctx.textAlign = inputs.align.value;
+            ctx.textBaseline = "top"; 
+
+            // Text holen und klammern
+            const rawText = inputs.quote.value;
+            const styledText = wrapQuote(rawText, inputs.quoteMarks.value);
+
+            // Position & Margin
+            const margin = (fullW * 0.12) * scaleFactor; 
+            let xPos = canvas.width / 2;
+            if(inputs.align.value === 'left') xPos = margin;
+            if(inputs.align.value === 'right') xPos = canvas.width - margin;
+
+            // Offsets addieren
+            xPos += (parseInt(inputs.offsetX.value) * 4) * scaleFactor;
+            const manualYOffset = (parseInt(inputs.offsetY.value) * 4) * scaleFactor;
+
+            // Word Wrap
+            const maxWidth = canvas.width - (margin * 2);
+            const lineHeight = scaledQuoteSize * 1.3;
+            
+            const lines = getLines(ctx, styledText, maxWidth);
+            const totalTextHeight = lines.length * lineHeight;
+            
+            // Vertikal zentrieren + Offset
+            let yPos = (canvas.height - totalTextHeight) / 2;
+            yPos += manualYOffset;
+
+            lines.forEach(line => {
+                ctx.fillText(line, xPos, yPos);
+                yPos += lineHeight;
+            });
+
+            // --- AUTOR RENDERN ---
+            const rawAuthorSize = parseInt(inputs.authorSize.value) * 4;
+            const scaledAuthorSize = rawAuthorSize * scaleFactor;
+            
+            ctx.font = `${scaledAuthorSize}px ${fontName}`;
+            ctx.textAlign = "right";
+            ctx.textBaseline = "alphabetic";
+            
+            const authorMargin = (fullW * 0.05) * scaleFactor;
+            ctx.fillText("© " + inputs.author.value, canvas.width - authorMargin, canvas.height - authorMargin);
+        }
+
+        // Zeilenumbruch Helper
+        function getLines(ctx, text, maxWidth) {
+            const words = text.split(" ");
+            const lines = [];
+            let currentLine = words[0];
+
+            for (let i = 1; i < words.length; i++) {
+                let word = words[i];
+                let width = ctx.measureText(currentLine + " " + word).width;
+                if (width < maxWidth) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+            return lines;
+        }
+
+        // --- Intelligentes Zeichnen ---
+        let animationFrameId;
+        function requestDraw() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animationFrameId = requestAnimationFrame(() => draw(false));
+        }
+
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', requestDraw);
+            input.addEventListener('change', requestDraw);
+        });
+
+        document.fonts.ready.then(function () { requestDraw(); });
+
+        // --- Export ---
+        async function exportFile(type) {
+            loadingOverlay.style.display = 'flex';
+            setTimeout(() => {
+                draw(true); // High Res
+                const filename = getSafeFilename();
+                
+                if (type === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const format = inputs.format.value;
+                    const orient = inputs.orientation.value === 'portrait' ? 'p' : 'l';
+                    
+                    const pdf = new jsPDF({ orientation: orient, unit: 'mm', format: format });
+                    const pdfW = pdf.internal.pageSize.getWidth();
+                    const pdfH = pdf.internal.pageSize.getHeight();
+                    
+                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+                    pdf.save(`${filename}.pdf`);
+                } else {
+                    const link = document.createElement('a');
+                    link.download = `${filename}.${type}`;
+                    link.href = canvas.toDataURL(`image/${type}`, 1.0);
+                    link.click();
+                }
+
+                draw(false); // Vorschau
+                loadingOverlay.style.display = 'none';
+            }, 100);
+        }
+    </script>
+</body>
+</html>
