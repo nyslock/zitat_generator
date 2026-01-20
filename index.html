@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zitat Generator</title>
+    <title>Ultimate Poster Generator + Image</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Lobster&family=Oswald&display=swap" rel="stylesheet">
 
     <style>
@@ -61,7 +60,14 @@
         textarea:focus, input:focus, select:focus { border-color: #007bff; background: #333; }
         textarea { resize: vertical; min-height: 70px; }
 
-        /* Style Buttons */
+        /* File Input Styling */
+        input[type="file"] {
+            background: #2c2c2c; padding: 10px; width: 100%; color: #aaa; border: 1px solid #444; border-radius: 5px; cursor: pointer;
+        }
+        input[type="file"]::file-selector-button {
+            background: #444; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-right: 10px;
+        }
+
         .style-buttons { display: flex; gap: 5px; }
         .toggle-btn {
             flex: 1; padding: 10px; background: #2c2c2c; border: 1px solid #444;
@@ -106,11 +112,15 @@
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
             max-width: 100%; height: auto; border: 1px solid #fff;
         }
+        
+        .section-title {
+            color: #007bff; border-bottom: 1px solid #333; padding-bottom: 5px; margin-top: 15px; margin-bottom: 10px; font-size: 0.9rem; letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Zitat Generator</h1>
+    <h1>Poster Generator</h1>
 
     <div class="container">
         <div class="controls">
@@ -127,16 +137,16 @@
                 <div class="control-group">
                     <label>Ausrichtung</label>
                     <select id="orientation">
-                        <option value="landscape" selected>Querformat (Standard)</option>
+                        <option value="landscape" selected>Querformat</option>
                         <option value="portrait">Hochformat</option>
                     </select>
                 </div>
             </div>
 
-            <hr style="width:100%; border:0; border-top:1px solid #444;">
+            <div class="section-title">TEXT & STIL</div>
 
             <div class="control-group">
-                <label>Zitat Text (ohne Klammern)</label>
+                <label>Zitat Text</label>
                 <textarea id="quoteText">Design is intelligence made visible.</textarea>
             </div>
 
@@ -144,10 +154,10 @@
                 <label style="color:#007bff;">Automatische Klammerung</label>
                 <select id="quoteMarks" style="border-color:#007bff;">
                     <option value="none">Keine</option>
-                    <option value="german" selected>„ Deutsch “ (Unten - Oben)</option>
-                    <option value="english">" Englisch " (Oben - Oben)</option>
-                    <option value="special">` Spezial ´ (Akzente)</option>
-                    <option value="french">» Französisch « (Pfeile)</option>
+                    <option value="german" selected>„ Deutsch “</option>
+                    <option value="english">" Englisch "</option>
+                    <option value="special">` Spezial ´</option>
+                    <option value="french">» Französisch «</option>
                     <option value="single">‚ Einfach ‘</option>
                 </select>
             </div>
@@ -177,29 +187,53 @@
                 </div>
             </div>
 
-            <hr style="width:100%; border:0; border-top:1px solid #444;">
-
-            <div class="row" style="justify-content: space-between; align-items: center;">
-                <label>Positionierung</label>
-                <button class="reset-btn" onclick="resetPosition()">Mitte Reset</button>
-            </div>
+            <div class="section-title">BILD / LOGO EINFÜGEN</div>
 
             <div class="control-group">
-                <label>Größe: <span id="quoteSizeDisplay">60</span></label>
-                <input type="range" id="quoteSize" min="20" max="300" value="60">
+                <label>Bild Datei hochladen</label>
+                <input type="file" id="imageInput" accept="image/*">
             </div>
 
             <div class="row">
                 <div class="control-group">
-                    <label>Verschieben X</label>
-                    <input type="range" id="offsetX" min="-500" max="500" value="0">
+                    <label>Größe</label>
+                    <input type="range" id="imgSize" min="1" max="100" value="20">
                 </div>
                 <div class="control-group">
-                    <label>Verschieben Y</label>
-                    <input type="range" id="offsetY" min="-1000" max="1000" value="0">
+                    <button class="reset-btn" onclick="resetImage()" style="margin-top:22px;">Reset Bild</button>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="control-group">
+                    <label>Bild Pos X</label>
+                    <input type="range" id="imgX" min="-600" max="600" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Bild Pos Y</label>
+                    <input type="range" id="imgY" min="-600" max="600" value="0">
                 </div>
             </div>
 
+            <div class="section-title">TEXT POSITIONIERUNG</div>
+
+            <div class="row" style="justify-content: space-between; align-items: center;">
+                <label>Größe Text: <span id="quoteSizeDisplay">60</span></label>
+                <button class="reset-btn" onclick="resetTextPosition()">Reset Text</button>
+            </div>
+            <input type="range" id="quoteSize" min="20" max="300" value="60">
+
+            <div class="row">
+                <div class="control-group">
+                    <label>Text Pos X</label>
+                    <input type="range" id="offsetX" min="-500" max="500" value="0">
+                </div>
+                <div class="control-group">
+                    <label>Text Pos Y</label>
+                    <input type="range" id="offsetY" min="-1000" max="1000" value="0">
+                </div>
+            </div>
+            
             <div class="control-group">
                 <label>Text-Ausrichtung</label>
                 <select id="textAlign">
@@ -209,7 +243,7 @@
                 </select>
             </div>
 
-            <hr style="width:100%; border:0; border-top:1px solid #444;">
+            <div class="section-title">AUTOR</div>
 
             <div class="control-group">
                 <label>Autor Name</label>
@@ -217,7 +251,7 @@
             </div>
             
             <div class="control-group">
-                <label>Autor Größe: <span id="authorSizeDisplay">25</span></label>
+                <label>Autor Größe</label>
                 <input type="range" id="authorSize" min="10" max="150" value="25">
             </div>
 
@@ -241,6 +275,7 @@
         
         let isBold = false;
         let isItalic = false;
+        let uploadedImage = null; // Speichert das hochgeladene Bild
 
         const inputs = {
             format: document.getElementById('paperFormat'),
@@ -253,50 +288,73 @@
             offsetY: document.getElementById('offsetY'),
             align: document.getElementById('textAlign'),
             author: document.getElementById('authorText'),
-            authorSize: document.getElementById('authorSize')
+            authorSize: document.getElementById('authorSize'),
+            // Bild Inputs
+            imageFile: document.getElementById('imageInput'),
+            imgSize: document.getElementById('imgSize'),
+            imgX: document.getElementById('imgX'),
+            imgY: document.getElementById('imgY')
         };
         
-        const displays = {
-            quote: document.getElementById('quoteSizeDisplay'),
-            author: document.getElementById('authorSizeDisplay')
-        };
+        const quoteSizeDisplay = document.getElementById('quoteSizeDisplay');
 
         const toggles = {
             bold: document.getElementById('btnBold'),
             italic: document.getElementById('btnItalic')
         };
 
-        // Abmessungen 300 DPI
         const paperSizes = {
             'a4': { w: 2480, h: 3508 },
             'a3': { w: 3508, h: 4960 },
             'a2': { w: 4960, h: 7016 }
         };
 
-        // Performance: Vorschau-Breite
         const PREVIEW_WIDTH = 1000; 
 
         // --- Toggle Logic ---
         toggles.bold.addEventListener('click', () => { isBold = !isBold; toggles.bold.classList.toggle('active'); requestDraw(); });
         toggles.italic.addEventListener('click', () => { isItalic = !isItalic; toggles.italic.classList.toggle('active'); requestDraw(); });
 
-        function resetPosition() {
+        // --- Bild Upload Logic ---
+        inputs.imageFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        uploadedImage = img; // Bild speichern
+                        requestDraw(); // Neu zeichnen
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function resetTextPosition() {
             inputs.offsetX.value = 0;
             inputs.offsetY.value = 0;
             requestDraw();
         }
 
-        // --- AUTOMATISCHE KLAMMERN LOGIK ---
+        function resetImage() {
+            inputs.imgSize.value = 20;
+            inputs.imgX.value = 0;
+            inputs.imgY.value = 0;
+            requestDraw();
+        }
+
         function wrapQuote(text, style) {
             text = text.trim();
             if(!text) return "";
             switch(style) {
-                case 'german': return `„${text}“`;   // Deutsch
-                case 'english': return `"${text}"`;  // Englisch
-                case 'french': return `»${text}«`;   // Französisch
-                case 'special': return `\`${text}´`; // Backtick & Akzent
-                case 'single': return `‚${text}‘`;   // Einfach
-                default: return text;                // Keine
+                case 'german': return `„${text}“`;
+                case 'english': return `"${text}"`;
+                case 'french': return `»${text}«`;
+                case 'special': return `\`${text}´`;
+                case 'single': return `‚${text}‘`;
+                default: return text;
             }
         }
 
@@ -308,17 +366,14 @@
             return name;
         }
 
-        // --- Haupt-Zeichenfunktion ---
         function draw(isExport = false) {
             const format = inputs.format.value;
             const orient = inputs.orientation.value;
             
-            // 1. Basis-Größe
             let fullW = paperSizes[format].w;
             let fullH = paperSizes[format].h;
             if (orient === 'landscape') [fullW, fullH] = [fullH, fullW];
 
-            // 2. Skalierung für Vorschau vs Export
             let scaleFactor = isExport ? 1.0 : (PREVIEW_WIDTH / fullW);
             
             canvas.width = fullW * scaleFactor;
@@ -328,16 +383,28 @@
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // UI Update
             if(!isExport) {
-                displays.quote.textContent = inputs.quoteSize.value;
-                displays.author.textContent = inputs.authorSize.value;
+                quoteSizeDisplay.textContent = inputs.quoteSize.value;
+            }
+
+            // --- BILD RENDERN (Hinter dem Text, oder wo man will) ---
+            if (uploadedImage) {
+                // Größe berechnen: Slider 1-100 entspricht % der Blattbreite
+                const targetWidth = canvas.width * (parseInt(inputs.imgSize.value) / 100);
+                const aspectRatio = uploadedImage.height / uploadedImage.width;
+                const targetHeight = targetWidth * aspectRatio;
+
+                // Position berechnen (Start ist Mitte)
+                // Offset muss auch mit scaleFactor multipliziert werden
+                const posX = (canvas.width / 2) - (targetWidth / 2) + (parseInt(inputs.imgX.value) * 4 * scaleFactor);
+                const posY = (canvas.height / 2) - (targetHeight / 2) + (parseInt(inputs.imgY.value) * 4 * scaleFactor);
+
+                ctx.drawImage(uploadedImage, posX, posY, targetWidth, targetHeight);
             }
 
             // --- ZITAT RENDERN ---
             const rawQuoteSize = parseInt(inputs.quoteSize.value) * 4;
             const scaledQuoteSize = rawQuoteSize * scaleFactor;
-            
             const fontName = inputs.fontFamily.value;
             let fontStyle = "";
             if (isItalic) fontStyle += "italic ";
@@ -348,28 +415,22 @@
             ctx.textAlign = inputs.align.value;
             ctx.textBaseline = "top"; 
 
-            // Text holen und klammern
             const rawText = inputs.quote.value;
             const styledText = wrapQuote(rawText, inputs.quoteMarks.value);
 
-            // Position & Margin
             const margin = (fullW * 0.12) * scaleFactor; 
             let xPos = canvas.width / 2;
             if(inputs.align.value === 'left') xPos = margin;
             if(inputs.align.value === 'right') xPos = canvas.width - margin;
 
-            // Offsets addieren
             xPos += (parseInt(inputs.offsetX.value) * 4) * scaleFactor;
             const manualYOffset = (parseInt(inputs.offsetY.value) * 4) * scaleFactor;
 
-            // Word Wrap
             const maxWidth = canvas.width - (margin * 2);
             const lineHeight = scaledQuoteSize * 1.3;
-            
             const lines = getLines(ctx, styledText, maxWidth);
             const totalTextHeight = lines.length * lineHeight;
             
-            // Vertikal zentrieren + Offset
             let yPos = (canvas.height - totalTextHeight) / 2;
             yPos += manualYOffset;
 
@@ -390,7 +451,6 @@
             ctx.fillText("© " + inputs.author.value, canvas.width - authorMargin, canvas.height - authorMargin);
         }
 
-        // Zeilenumbruch Helper
         function getLines(ctx, text, maxWidth) {
             const words = text.split(" ");
             const lines = [];
@@ -410,7 +470,6 @@
             return lines;
         }
 
-        // --- Intelligentes Zeichnen ---
         let animationFrameId;
         function requestDraw() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -418,17 +477,18 @@
         }
 
         Object.values(inputs).forEach(input => {
-            input.addEventListener('input', requestDraw);
-            input.addEventListener('change', requestDraw);
+            if(input) { // Check falls input existiert
+                input.addEventListener('input', requestDraw);
+                input.addEventListener('change', requestDraw);
+            }
         });
 
         document.fonts.ready.then(function () { requestDraw(); });
 
-        // --- Export ---
         async function exportFile(type) {
             loadingOverlay.style.display = 'flex';
             setTimeout(() => {
-                draw(true); // High Res
+                draw(true);
                 const filename = getSafeFilename();
                 
                 if (type === 'pdf') {
@@ -450,7 +510,7 @@
                     link.click();
                 }
 
-                draw(false); // Vorschau
+                draw(false);
                 loadingOverlay.style.display = 'none';
             }, 100);
         }
